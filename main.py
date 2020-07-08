@@ -39,6 +39,4 @@ async def eval_(ctx, *, expression: str):
 
     return await ctx.send(f"> {repr(expression)} -> **{type(result).__name__}**\n{str(result)}")
 
-
-
 bot.run(environ['HOLLOW_TOKEN'])
