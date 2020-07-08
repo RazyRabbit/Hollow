@@ -49,10 +49,16 @@ class Special(commands.Cog):
         if me == author or me not in (await reaction.users().flatten()):
             return
 
+        for embed in message.embeds:
+            for field in embed.fields:
+                content += f'\n{field.name}{field.value}'
+        
         roles = tuple(filter(lambda r: f"{emoji}: {r.mention}" in content, guild.roles))
         roles = tuple(filter(lambda r: r.permissions <= author.top_role.permissions, roles))
 
-        if me.guild_permissions.manage_roles:
+        if not roles:
+            return await reaction.remove()
+        elif me.guild_permissions.manage_roles:
             await author.remove_roles(*roles)
         else:
             raise commands.MissingPermissions(['manage_permissions'])
@@ -61,8 +67,13 @@ class Special(commands.Cog):
     
     @commands.command(aliases=['rr', 'reaction_role'])
     @commands.has_permissions(add_reactions=True)
-    async def react(self, ctx, emoji, message: Message):
-        return await message.add_reaction(emoji)
+    async def react(self, ctx, message: Message, *emojis: str):
+        self.bot._connection._messages.append(message)
+
+        for emoji in emojis:
+            await message.add_reaction(emoji)
+
+        return await ctx.message.delete()
     
     @commands.command()
     async def embed(self, ctx, message: str, *, embed: str):

@@ -3,7 +3,7 @@ from os import environ
 
 from discord.ext import commands
 
-bot = commands.Bot(command_prefix='h!')
+bot = commands.Bot(command_prefix='hc!')
 
 @bot.command()
 @commands.is_owner()
