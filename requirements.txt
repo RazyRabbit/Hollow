@@ -1,2 +1,6 @@
 discord
 PyNaCl
+youtube-dl
+websockets
+opuslib
+requests
