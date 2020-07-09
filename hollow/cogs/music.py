@@ -170,8 +170,5 @@ class Music(commands.Cog):
         
         return await ctx.send(f'{ctx.author.mention} resumiu o som', delete_after=5.0)
 
-
-
-
 def setup(bot):
     return bot.add_cog(Music(bot))
