@@ -7,6 +7,7 @@ from discord import FFmpegPCMAudio
 
 from discord import VoiceChannel
 from discord import Guild
+from discord import Embed
 
 from youtube_dl import YoutubeDL
 
@@ -25,9 +26,12 @@ ydl = YoutubeDL({
 
 
 class YoutubeVideo(PCMVolumeTransformer):
-    def __init__(self, source, title, url):
+    def __init__(self, source, thumbnail, title, url, uploader, description):
         super().__init__(FFmpegPCMAudio(source))
 
+        self.description = description
+        self.thumbnail = thumbnail
+        self.uploader = uploader
         self.title = title
         self.url = url
 
@@ -38,7 +42,11 @@ class YoutubeVideo(PCMVolumeTransformer):
         if "entries" in result:
             result = result["entries"][0]
         
-        return cls(ydl.prepare_filename(result), result.get("title"), result.get("url"))
+        return cls(ydl.prepare_filename(result),
+            result.get("thumbnail"), result.get("title"),
+            result.get("url"), result.get("uploader"),
+            result.get("description")
+        )
     
     def __del__(self):
         return self.cleanup()
@@ -117,7 +125,14 @@ class Music(commands.Cog):
             await player.add(titulo)
         
         async def on_next_sound(top):
-            return await ctx.send(f'tocando agora **"{top.title}"**"', delete_after=5.0)
+            embed = Embed(title=top.title, description=top.description)
+
+            embed.set_image(url=top.thumbnail)
+
+            embed.set_footer(text=f'ouvida por {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=top.uploader)
+
+            return await ctx.send(f':musical_note: tocando agora!! :musical_note:', embed=embed)
 
         return self.players.setdefault(ctx.guild.id, player).sing(on_next_sound)
     
