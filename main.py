@@ -20,7 +20,7 @@ async def load(ctx, *extensions):
 
 @bot.event
 async def on_ready():
-    return await load(None, 'special')
+    return await load(None, 'special', 'music')
 
 @bot.command()
 async def ping(ctx):

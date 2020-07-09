@@ -65,7 +65,7 @@ class Special(commands.Cog):
 
         return
     
-    @commands.command(aliases=['rr', 'reaction_role'])
+    @commands.command(aliases=['reaja'])
     @commands.has_permissions(add_reactions=True)
     async def react(self, ctx, message: Message, *emojis: str):
         self.bot._connection._messages.append(message)
