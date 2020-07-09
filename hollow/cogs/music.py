@@ -130,11 +130,13 @@ class Music(commands.Cog):
             embed.set_image(url=top.thumbnail)
 
             embed.set_footer(text=f'ouvida por {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
+            embed.set_thumbnail(url='https://i.pinimg.com/originals/93/07/51/930751de3d3f7a49b4a94e439c0014f4.gif')
             embed.set_author(name=top.uploader)
 
             return await ctx.send(f':musical_note: tocando agora!! :musical_note:', embed=embed)
 
-        return self.players.setdefault(ctx.guild.id, player).sing(on_next_sound)
+        if titulos:
+            return self.players.setdefault(ctx.guild.id, player).sing(on_next_sound)
     
     @commands.command()
     async def connect(self, ctx: commands.Context):
@@ -158,14 +160,22 @@ class Music(commands.Cog):
     
     @commands.command(aliases=['pausar'])
     async def pause(self, ctx):
-        if not (await self.players[ctx.guild.id].pause()):
+        player = self.players[ctx.guild.id]
+
+        if player.paused:
             return await ctx.send('não há som para pausar', delete_after=5.0)
+        else:
+            await player.pause()
         
         return await ctx.send(f'{ctx.author.mention} pausou o som', delete_after=5.0)
     
     @commands.command(aliases=['continuar'])
     async def resume(self, ctx):
-        if not (await self.players[ctx.guild.id].resume()):
+        player = self.players[ctx.guild.id]
+
+        if player.paused:
+            await player.resume()
+        else:
             return await ctx.send('não há som para resumir.', delete_after=5.0)
         
         return await ctx.send(f'{ctx.author.mention} resumiu o som', delete_after=5.0)
