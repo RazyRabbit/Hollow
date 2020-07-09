@@ -36,22 +36,25 @@ class YoutubeVideo(PCMVolumeTransformer):
         self.url = url
 
     @classmethod
-    def search(cls, string, download=True):
+    def search(cls, string, download=False):
         result = ydl.extract_info(string, download)
 
         if "entries" in result:
             result = result["entries"][0]
-        
-        return cls(ydl.prepare_filename(result),
+
+        return cls(
+            ydl.prepare_filename(result) if download else result['url'],
             result.get("thumbnail"), result.get("title"),
             result.get("url"), result.get("uploader"),
             result.get("description")
         )
     
+    
     def __del__(self):
         return self.cleanup()
 
 class Player:
+    running = False
     paused = False
 
     incoming = Event()
@@ -64,13 +67,16 @@ class Player:
     
     def sing(self, coro):
         async def player_loop(loop):
+            self.running = True
+
             while not self.queue.empty():
                 source = await self.queue.get()
 
                 await coro(source)
                 self.guild.voice_client.play(source, after=lambda _: loop.call_soon_threadsafe(self.incoming.set))
                 await self.incoming.wait()
-            
+
+            self.running = False
             return
         
         return self.loop.create_task(player_loop(self.loop))
@@ -96,8 +102,9 @@ class Player:
 
         return self
     
-    async def next(self):
+    async def skip(self):
         try:
+            self.paused = False
             await self.guild.voice_client.stop()
         except:
             return
@@ -120,40 +127,50 @@ class Music(commands.Cog):
             await self.resume(ctx)
         elif not titulos:
             await self.pause(ctx)
-
+        
+        running = player.running
+        
         for titulo in titulos:
             await player.add(titulo)
         
         async def on_next_sound(top):
-            embed = Embed(title=top.title, description=top.description)
+            embed = Embed(title=top.title, description=top.description, color=ctx.me.color)
 
+            embed.set_thumbnail(url='https://i.pinimg.com/originals/93/07/51/930751de3d3f7a49b4a94e439c0014f4.gif')
+            embed.set_footer(text=f'ouvida por {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
+            embed.set_author(name=top.uploader)
             embed.set_image(url=top.thumbnail)
 
-            embed.set_footer(text=f'ouvida por {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
-            embed.set_thumbnail(url='https://i.pinimg.com/originals/93/07/51/930751de3d3f7a49b4a94e439c0014f4.gif')
-            embed.set_author(name=top.uploader)
-
             return await ctx.send(f':musical_note: tocando agora!! :musical_note:', embed=embed)
+        
+        player = self.players.setdefault(ctx.guild.id, player)
 
-        if titulos:
-            return self.players.setdefault(ctx.guild.id, player).sing(on_next_sound)
+        if not running:
+            return player.sing(on_next_sound)
+        elif len(titulos) == 1:
+            return await ctx.send(f"foi adicionado {titulos[0]} na queue", delete_after=5.0)
+        elif len(titulos) > 1:
+            return await ctx.send(f"foram adicionados {', '.join(titulos[:-1])} e {titulos[-1]} na queue", delete_after=5.0)
+        
+        return
     
     @commands.command()
     async def connect(self, ctx: commands.Context):
         vchannel = ctx.author.voice.channel
         vclient = ctx.voice_client
 
-        if vclient and vclient != vchannel:
+        if vclient and vclient.channel != vchannel:
+            await ctx.send(f'movido para o canal **{vchannel.name}**', delete_after=5.0)
             await vclient.move_to(vchannel)
         else:
+            await ctx.send(f'conectado ao canal **{vchannel.name}**', delete_after=5.0)
             await vchannel.connect()
 
-        await ctx.send(f'conectado ao canal **{vchannel.name}**', delete_after=5.0)
         return await ctx.message.delete()
     
     @commands.command(aliases=['pular', 'proximo'])
     async def skip(self, ctx):
-        if not (await self.players[ctx.guild.id].next()):
+        if not (await self.players[ctx.guild.id].skip()):
             return await ctx.send('não há o que pular na queue', delete_after=5.0)
 
         return await ctx.send(f'{ctx.author.mention} pulou o som', delete_after=5.0)
