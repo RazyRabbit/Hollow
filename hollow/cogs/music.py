@@ -56,9 +56,6 @@ class YoutubeVideo(PCMVolumeTransformer):
         return self.cleanup()
 
 class Player:
-    running = False
-    paused = False
-
     incoming = Event()
     queue = Queue()
 
@@ -67,28 +64,20 @@ class Player:
         self.voice = voice
         self.loop = loop
     
-    def sing(self, coro):
-        async def player_loop(loop):
-            self.running = True
+    async def sing(self, coro_iteration, coro_end):
+        while not self.queue.empty():
+            current = YoutubeVideo.search(await self.queue.get())
 
-            while not self.queue.empty():
-                current = (await self.queue.get())()
+            self.voice.play(current, after=lambda _: self.loop.call_soon_threadsafe(self.incoming.set))
+            self.incoming.clear()
 
-                await coro(current)
-                self.voice.play(current, after=lambda _: loop.call_soon_threadsafe(self.incoming.set))
-                await self.incoming.wait()
-            
-            self.running = False
-            return
-        
-        return self.loop.create_task(player_loop(self.loop))
-    
-    async def add(self, title):
-        return await self.queue.put(lambda: YoutubeVideo.search(title))
-    
+            await coro_iteration(current)
+            await self.incoming.wait()
+
+        return await coro_end()
+
     async def pause(self):
         try:
-            self.paused = True
             await self.voice.pause()
         except:
             return
@@ -97,7 +86,6 @@ class Player:
     
     async def resume(self):
         try:
-            self.paused = False
             await self.voice.resume()
         except:
             return
@@ -106,12 +94,20 @@ class Player:
     
     async def skip(self):
         try:
-            self.paused = False
             self.voice.stop()
+            return not self.queue.empty()
         except:
             return
 
         return self
+    
+    @property
+    def paused(self):
+        return self.voice.is_paused
+    
+    @property
+    def playing(self):
+        return self.voice.is_playing
     
 class Music(commands.Cog):
     players = {}
@@ -120,20 +116,14 @@ class Music(commands.Cog):
         self.bot = bot
 
     @commands.command(aliases=['reproduzir'])
-    async def tocar(self, ctx, *titulos):
+    async def tocar(self, ctx, *, titulo: str):
         await self.connect(ctx)
 
-        player = self.players.get(ctx.guild.id, Player(self.bot.loop, ctx.guild.voice_client, ctx.channel))
+        player = self.players.setdefault(ctx.guild.id, Player(self.bot.loop, ctx.guild.voice_client, ctx.channel))
 
-        if player.paused:
-            await self.resume(ctx)
-        elif not titulos:
-            await self.pause(ctx)
+        await player.queue.put(titulo)
         
-        for titulo in titulos:
-            await player.add(titulo)
-        
-        async def on_next_sound(top):
+        async def on_next(top):
             embed = Embed(title=top.title, description=top.description, color=ctx.me.color)
 
             embed.set_thumbnail(url='https://i.pinimg.com/originals/93/07/51/930751de3d3f7a49b4a94e439c0014f4.gif')
@@ -143,18 +133,14 @@ class Music(commands.Cog):
 
             return await ctx.send(f':musical_note: tocando agora!! :musical_note:', embed=embed)
         
-        player = self.players.setdefault(ctx.guild.id, player)
+        async def on_end():
+            del self.players[ctx.guild.id]
+            return await ctx.send(f'acabaram as músicas!!', delete_after=5.0)
 
-        if not player.running:
-            print('playing again')
-            return player.sing(on_next_sound)
-        
-        if len(titulos) == 1:
-            return await ctx.send(f"foi adicionado {titulos[0]} na queue", delete_after=5.0)
-        elif len(titulos) > 1:
-            return await ctx.send(f"foram adicionados {', '.join(titulos[:-1])} e {titulos[-1]} na queue", delete_after=5.0)
-        
-        return
+        if player.playing():
+            return await ctx.send(f"foi adicionado {titulo} na queue", delete_after=5.0)
+
+        return await player.sing(on_next, on_end)
     
     @commands.command()
     async def connect(self, ctx: commands.Context):
