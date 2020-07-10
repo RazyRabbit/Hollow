@@ -6,6 +6,7 @@ from discord import PCMVolumeTransformer
 from discord import FFmpegPCMAudio
 
 from discord import VoiceChannel
+from discord import VoiceClient
 from discord import Guild
 from discord import Embed
 
@@ -60,9 +61,9 @@ class Player:
     incoming = Event()
     queue = Queue()
 
-    def __init__(self, loop, guild: Guild, channel: VoiceChannel):
+    def __init__(self, loop, voice: VoiceClient, channel: VoiceChannel):
         self.channel = channel
-        self.guild = guild
+        self.voice = voice
         self.loop = loop
     
     def sing(self, coro):
@@ -70,24 +71,24 @@ class Player:
             self.running = True
 
             while not self.queue.empty():
-                source = await self.queue.get()
+                current = (await self.queue.get())()
 
-                await coro(source)
-                self.guild.voice_client.play(source, after=lambda _: loop.call_soon_threadsafe(self.incoming.set))
+                await coro(current)
+                self.voice.play(current, after=lambda _: loop.call_soon_threadsafe(self.incoming.set))
                 await self.incoming.wait()
-
+            
             self.running = False
             return
         
         return self.loop.create_task(player_loop(self.loop))
     
     async def add(self, title):
-        return await self.queue.put(YoutubeVideo.search(title))
+        return await self.queue.put(lambda: YoutubeVideo.search(title))
     
     async def pause(self):
         try:
             self.paused = True
-            await self.guild.voice_client.pause()
+            await self.voice.pause()
         except:
             return
         
@@ -96,7 +97,7 @@ class Player:
     async def resume(self):
         try:
             self.paused = False
-            await self.guild.voice_client.resume()
+            await self.voice.resume()
         except:
             return
 
@@ -105,12 +106,12 @@ class Player:
     async def skip(self):
         try:
             self.paused = False
-            await self.guild.voice_client.stop()
+            self.voice.stop()
         except:
             return
-        
-        return self
 
+        return self
+    
 class Music(commands.Cog):
     players = {}
 
@@ -121,14 +122,12 @@ class Music(commands.Cog):
     async def tocar(self, ctx, *titulos):
         await self.connect(ctx)
 
-        player = self.players.get(ctx.guild.id, Player(self.bot.loop, ctx.guild, ctx.channel))
+        player = self.players.get(ctx.guild.id, Player(self.bot.loop, ctx.guild.voice_client, ctx.channel))
 
         if player.paused:
             await self.resume(ctx)
         elif not titulos:
             await self.pause(ctx)
-        
-        running = player.running
         
         for titulo in titulos:
             await player.add(titulo)
@@ -145,9 +144,11 @@ class Music(commands.Cog):
         
         player = self.players.setdefault(ctx.guild.id, player)
 
-        if not running:
+        if not player.running:
+            print('playing again')
             return player.sing(on_next_sound)
-        elif len(titulos) == 1:
+        
+        if len(titulos) == 1:
             return await ctx.send(f"foi adicionado {titulos[0]} na queue", delete_after=5.0)
         elif len(titulos) > 1:
             return await ctx.send(f"foram adicionados {', '.join(titulos[:-1])} e {titulos[-1]} na queue", delete_after=5.0)
@@ -156,15 +157,19 @@ class Music(commands.Cog):
     
     @commands.command()
     async def connect(self, ctx: commands.Context):
-        vchannel = ctx.author.voice.channel
         vclient = ctx.voice_client
+        avoice = ctx.author.voice
 
-        if vclient and vclient.channel != vchannel:
-            await ctx.send(f'movido para o canal **{vchannel.name}**', delete_after=5.0)
-            await vclient.move_to(vchannel)
-        else:
-            await ctx.send(f'conectado ao canal **{vchannel.name}**', delete_after=5.0)
-            await vchannel.connect()
+        if avoice is None:
+            await ctx.send(f'você precisa estar em um canal de voz', delete_after=5.0)
+
+        elif vclient is None:
+            await ctx.send(f'estou conectado do no canal {avoice.channel.name}', delete_after=5.0)
+            await avoice.channel.connect()
+        
+        elif vclient.channel != avoice.channel:
+            if len(avoice.channel.members) > len(vclient.channel.members):
+                vclient.move_to(avoice.channel)
 
         return await ctx.message.delete()
     
