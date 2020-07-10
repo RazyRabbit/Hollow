@@ -15,6 +15,7 @@ from youtube_dl import YoutubeDL
 ydl = YoutubeDL({
     'format': 'bestaudio/best',
     'outtmpl': 'downloads/%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'cookies': '__pycache__/cookies.txt',
     'default_search': 'auto',
     'source_address': '0.0.0.0',
     'nocheckcertificate': True,
