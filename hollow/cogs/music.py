@@ -114,6 +114,13 @@ class Music(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+    
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.MissingPermissions):
+            return await ctx.send(f'não tenho permissões o suficiente para executar o comando **{ctx.invoked_with}**')
+
+        return await ctx.send(f'ocorreu um erro desconhecido ao invocar o comando {ctx.invoked_with}')
 
     @commands.command(aliases=['reproduzir'])
     async def tocar(self, ctx, *, titulo: str):
@@ -138,7 +145,7 @@ class Music(commands.Cog):
             return await ctx.send(f'acabaram as músicas!!', delete_after=5.0)
 
         if player.playing():
-            return await ctx.send(f"foi adicionado {titulo} na queue", delete_after=5.0)
+            return await ctx.send(f"foi adicionado **{titulo.title()}** na queue", delete_after=5.0)
 
         return await player.sing(on_next, on_end)
     
@@ -158,7 +165,7 @@ class Music(commands.Cog):
             if len(avoice.channel.members) > len(vclient.channel.members):
                 vclient.move_to(avoice.channel)
 
-        return await ctx.message.delete()
+        return
     
     @commands.command(aliases=['pular', 'proximo'])
     async def skip(self, ctx):
