@@ -1,16 +1,11 @@
 from asyncio import Queue, Event
 
 from discord.ext import commands
-
-from discord import PCMVolumeTransformer
-from discord import FFmpegPCMAudio
-
-from discord import VoiceChannel
-from discord import VoiceClient
-from discord import Guild
-from discord import Embed
-
 from youtube_dl import YoutubeDL
+
+from discord import PCMVolumeTransformer, FFmpegPCMAudio
+from discord import VoiceChannel, VoiceClient
+from discord import Guild, Embed
 
 ydl = YoutubeDL({
     'format': 'bestaudio/best',
