@@ -19,7 +19,7 @@ class Basic(commands.Cog):
             return await ctx.send(f'não há permissões o suficiente para executar o comando **{ctx.invoked_with}**', delete_after=5.0)
 
         elif isinstance(error, commands.CommandNotFound):
-            return await ctx.send(f'você quis dizer **{str(find(self.bot.commands, ctx.invoked_with))}**?')
+            return await ctx.send(f'você quis dizer **{str(list(find(self.bot.commands, ctx.invoked_with))[0])}**?')
 
         raise error
 
