@@ -115,13 +115,6 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send(f'não tenho permissões o suficiente para executar o comando **{ctx.invoked_with}**')
-
-        return await ctx.send(f'ocorreu um erro desconhecido ao invocar o comando {ctx.invoked_with}')
-
     @commands.command(aliases=['reproduzir'])
     async def tocar(self, ctx, *, titulo: str):
         await self.connect(ctx)
@@ -149,7 +142,7 @@ class Music(commands.Cog):
 
         return await player.sing(on_next, on_end)
     
-    @commands.command()
+    @commands.command(aliases=['conectar'])
     async def connect(self, ctx: commands.Context):
         vclient = ctx.voice_client
         avoice = ctx.author.voice
