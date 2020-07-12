@@ -37,8 +37,8 @@ class Basic(commands.Cog):
     
     @commands.command()
     async def python(self, ctx, *, expression: str):
-        if expression.startswith('```python'):
-            pya.console.send(expression[9:])
+        if expression.startswith('```python\n'):
+            pya.console.send(expression[10:-3])
         else:
             pya.console.send(expression)
 
