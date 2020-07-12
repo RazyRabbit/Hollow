@@ -36,7 +36,7 @@ class Basic(commands.Cog):
     @commands.command()
     async def python(self, ctx, *, expression: str):
         pya.console.send(expression)
-        return await ctx.send(f'> {expression}\n```python\n{self.console.output}```')
+        return await ctx.send(f'> {expression}\n```python\n{pya.console.output}```')
 
 def setup(bot):
     return bot.add_cog(Basic(bot))
