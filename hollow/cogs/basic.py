@@ -37,11 +37,14 @@ class Basic(commands.Cog):
     
     @commands.command()
     async def python(self, ctx, *, expression: str):
-        pya.console.send(expression)
+        if expression.startswith('```python'):
+            pya.console.send(expression[9:])
+        else:
+            pya.console.send(expression)
 
         try:
             return await self.last_python_message.edit(content=f'> {expression}\n```python\n{pya.console.output}```')
-            
+
         except:
             self.last_python_message = await ctx.send(f'> {expression}\n```python\n{pya.console.output}```')
             
