@@ -4,13 +4,11 @@ from os import environ
 from discord.ext import commands
 
 from .utils import pyanywhere
-from .utils import find
+from .utils import limit, find
 
 pya = pyanywhere.Client(environ['HOLLOW_PYA_USER'], environ['HOLLOW_PYA_TOKEN'])
 
 class Basic(commands.Cog):
-    last_python_message = None
-
     def __init__(self, bot):
         self.bot = bot
 
@@ -38,19 +36,11 @@ class Basic(commands.Cog):
     @commands.command()
     async def python(self, ctx, *, expression: str):
         if expression.startswith('```python\n'):
-            pya.console.send(expression[10:-3])
-        else:
-            pya.console.send(expression)
-
-        try:
-            return await self.last_python_message.edit(content=f'> {expression}\n```python\n{pya.console.output}```')
-
-        except:
-            self.last_python_message = await ctx.send(f'> {expression}\n```python\n{pya.console.output}```')
-            
-        return
+            expression = expression[10:-3]
         
-        
+        lines = pya.console.send(expression).replace('``', r'\``').splitlines()
+
+        return await ctx.send('> {}\n```python\n{}```'.format(expression, '\n'.join(lines[-15:])))
 
 def setup(bot):
     return bot.add_cog(Basic(bot))

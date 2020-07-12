@@ -5,6 +5,12 @@ import re
 
 ansi_escape = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
 
+def limit(string, max=2000):
+    if len(string) > max:
+        return f'{string[:len(string) -3]}...'
+
+    return string
+
 def compare(source, string):
     for a, b, score in zip_longest(source, string, count()):
         if a != b:

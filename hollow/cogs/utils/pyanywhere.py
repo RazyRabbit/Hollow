@@ -25,7 +25,7 @@ class Console:
         for input in inputs:
             post(f'/user/{self.client.username}/consoles/{self.id}/send_input/', self.client.token, input=f'{input}{end}')
 
-        return inputs
+        return self.output
 
     @property
     def output(self):
