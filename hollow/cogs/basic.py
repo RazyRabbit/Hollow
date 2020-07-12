@@ -9,6 +9,8 @@ from .utils import find
 pya = pyanywhere.Client(environ['HOLLOW_PYA_USER'], environ['HOLLOW_PYA_TOKEN'])
 
 class Basic(commands.Cog):
+    last_python_message = None
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -36,7 +38,16 @@ class Basic(commands.Cog):
     @commands.command()
     async def python(self, ctx, *, expression: str):
         pya.console.send(expression)
-        return await ctx.send(f'> {expression}\n```python\n{pya.console.output}```')
+
+        try:
+            return await self.last_python_message.edit(content=f'> {expression}\n```python\n{pya.console.output}```')
+            
+        except:
+            self.last_python_message = await ctx.send(f'> {expression}\n```python\n{pya.console.output}```')
+            
+        return
+        
+        
 
 def setup(bot):
     return bot.add_cog(Basic(bot))
