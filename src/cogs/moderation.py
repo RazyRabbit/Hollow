@@ -1,4 +1,4 @@
-from functools import partialmethod
+from functools import partial
 from typing import List
 
 from discord.ext.commands import Bot, Cog, Context
@@ -22,9 +22,9 @@ class Moderation(Private, Cog):
         channel: TextChannel = ctx.channel
 
         if member:
-            return await channel.purge(limit=limit, check=partialmethod(self.can_delete_of, member))
+            return await channel.purge(limit=limit, check=partial(self.can_delete_of, member))
 
-        return await channel.purge(limit=limit, check=partialmethod(self.can_delete, member))
+        return await channel.purge(limit=limit, check=partial(self.can_delete))
     
     @command(aliased=["desfixar", "unp"])
     async def unpin(self, ctx: Context, limit: int=10, reason=None):
@@ -32,7 +32,7 @@ class Moderation(Private, Cog):
         pinneds: List[Message] = await channel.pins()
 
         for _, message in zip(range(limit), pinneds):
-            await message.unpin(reason)
+            await message.unpin(reason=reason)
 
         return
 

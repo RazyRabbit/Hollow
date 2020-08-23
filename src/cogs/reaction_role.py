@@ -27,10 +27,6 @@ class ReactionRole(Private, Cog):
 
     def __init__(self, bot):
         self.bot = bot
-    
-    @Cog.listener()
-    async def on_command_error(self, ctx: Context, error):
-        return await ctx.send(f'erro: ``{str(error)}``', delete_after=5.0)
 
     @Cog.listener()
     async def on_reaction_add(self, reaction: Reaction, author: Member):
@@ -48,6 +44,8 @@ class ReactionRole(Private, Cog):
     
     @command()
     async def rr_new(self, ctx: Context, *, codeblock: str):
+        '''cria um embed como tabela de reaction-role'''
+
         if codeblock.startswith('```json\n') and codeblock.endswith('```'):
             raise SyntaxError("codeblock deve ter um sinalizador do tipo json")
         
@@ -69,6 +67,8 @@ class ReactionRole(Private, Cog):
     
     @command()
     async def rr_enable(self, ctx: Context, message: Message):
+        '''habilita uma tabela de reaction-role'''
+
         if message.id not in self.messages:
             self.bot._connection._messages.append(message)
             self.messages.setdefault(message.id, {})
@@ -77,20 +77,20 @@ class ReactionRole(Private, Cog):
     
     @command()
     async def rr_add(self, ctx: Context, message: Message, emoji: Emoji, role: Role):
+        '''associa um emoji a um cargo em uma tabela'''
+
         self.messages.setdefault(message.id, {}).setdefault(emoji, set()).add(role)
         await message.add_reaction(emoji)
         await ctx.message.delete()
     
     @command()
     async def as_json(self, ctx: Context, message: Message):
+        '''transforma uma mensagem em uma estrutura json'''
+
         for embed in message.embeds:
             await ctx.send(f'```json\n{json.dumps(embed.to_dict(), ensure_ascii=False, indent=1)}```')
 
-        return 
-    
-    @command()
-    async def add_field(self, ctx: Context, message: Message, name: str, value: str, inline=True):
-        return await message.edit(content=message.content, embed=message.embeds[-1].add_field(name=name, value=value, inline=inline))
+        return
 
-def setup(bot):
+def setup(bot: Bot):
     return bot.add_cog(ReactionRole(bot))
