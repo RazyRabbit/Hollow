@@ -44,7 +44,7 @@ class ReactionRole(Private, Cog):
     
     @Cog.listener()
     async def on_reaction_remove(self, reaction: Reaction, author: Member):
-        return self.on_reaction_add(reaction, author)
+        return await self.on_reaction_add(reaction, author)
     
     @command()
     async def rr_new(self, ctx: Context, *, codeblock: str):
