@@ -16,9 +16,8 @@ import json
 
 class Private:
     async def give_to(self, reaction: Reaction, author: Member, roles: Set[Role]):
-        author_roles = set(author.roles)
-        to_add = author_roles.difference(roles)
-        to_rem = author_roles.intersection(roles)
+        to_rem = set(author.roles).intersection(roles)
+        to_add = roles.difference(to_rem)
 
         await author.remove_roles(*to_rem, reason='reaction-role: os usuario já possui o role')
         await author.add_roles(*to_add, reason='reaction-role: o usuario não possui o role')
