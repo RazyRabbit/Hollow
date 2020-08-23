@@ -19,8 +19,8 @@ class Private:
         to_add = roles.difference(roles)
         to_rem = roles.intersection(roles)
 
-        await author.remove_roles(*to_add, reason='reaction-role: os usuario já possui o role')
-        await author.add_roles(*to_rem, reason='reaction-role: o usuario não possui o role')
+        await author.remove_roles(*to_rem, reason='reaction-role: os usuario já possui o role')
+        await author.add_roles(*to_add, reason='reaction-role: o usuario não possui o role')
 
 class ReactionRole(Private, Cog):
     messages = {}
@@ -38,10 +38,14 @@ class ReactionRole(Private, Cog):
         emoji: Emoji = reaction.emoji
 
         if emoji in (emojis := self.messages.get(message.id, {})):
-            return await self.give_to(reaction, author, emojis[emoji])
+            await self.give_to(reaction, author, emojis[emoji])
 
-        return 
-        
+        return
+    
+    @Cog.listener()
+    async def on_reaction_remove(self, reaction: Reaction, author: Member):
+        return self.on_reaction_add(reaction, author)
+    
     @command()
     async def rr_new(self, ctx: Context, *, codeblock: str):
         if codeblock.startswith('```json\n') and codeblock.endswith('```'):
