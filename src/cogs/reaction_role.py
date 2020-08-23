@@ -46,7 +46,7 @@ class ReactionRole(Private, Cog):
     async def rr_new(self, ctx: Context, *, codeblock: str):
         '''cria um embed como tabela de reaction-role'''
 
-        if codeblock.startswith('```json\n') and codeblock.endswith('```'):
+        if not codeblock.startswith('```json\n') and codeblock.endswith('```'):
             raise SyntaxError("codeblock deve ter um sinalizador do tipo json")
         
         codeblock = json.loads(codeblock[8:-3])
